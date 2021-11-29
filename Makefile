@@ -285,6 +285,16 @@ _push_litmus_git_app_checker:
 
 litmus-git-app-checker: deps _build_litmus_git_app_checker _push_litmus_git_app_checker
 
+_build_litmus_pg_jmeter:
+	@echo "INFO: Building container image for performing litmus-pg-jmeter check"
+	cd custom/workflow-helper/postgres-helper/jmeter && docker build -t litmuschaos/litmus-pg-jmeter .
+
+_push_litmus_pg_jmeter:
+	@echo "INFO: Publish container litmuschaos/litmus-pg-jmeter"
+	cd custom/workflow-helper/postgres-helper/jmeter && ./buildscripts/push
+
+litmus-pg-jmeter: deps _build_litmus_pg_jmeter _push_litmus_pg_jmeter
+
 _build_litmus_k8s:
 	@echo "INFO: Building container image for litmus-k8s"
 	cd custom/k8s && docker build -t litmuschaos/k8s .
@@ -354,6 +364,46 @@ _push_litmus_kafka_deployer:
 	cd custom/app-setup/kafka/buildscripts && ./push
 
 litmus-kafka-deployer: deps _build_litmus_kafka_deployer _push_litmus_kafka_deployer
+
+_build_litmus_pg_load:
+	@echo "INFO: Building container image for litmuschaos/litmus-pg-load"
+	cd custom/workflow-helper/postgres-helper/load-test && docker build -t litmuschaos/litmus-pg-load .
+
+_push_litmus_pg_load:
+	@echo "INFO: Publish container litmuschaos/litmus-pg-load"
+	cd custom/workflow-helper/postgres-helper/load-test && ./buildscripts/push
+
+litmus-pg-load: deps _build_litmus_pg_load _push_litmus_pg_load
+
+_build_litmus_experiment_hardened_alpine:
+	@echo "INFO: Building container image for litmuschaos/experiment-alpine:latest"
+	cd custom/hardened-alpine/experiment/ && docker build -t litmuschaos/experiment-alpine:latest . --build-arg TARGETARCH=amd64 --build-arg LITMUS_VERSION=1.13.8
+
+_push_litmus_experiment_hardened_alpine:
+	@echo "INFO: Publish container litmuschaos/experiment-alpine"
+	cd custom/hardened-alpine/experiment/ && ./buildscripts/push
+
+litmus-experiment-hardened-alpine: deps _build_litmus_experiment_hardened_alpine _push_litmus_experiment_hardened_alpine
+
+_build_litmus_infra_hardened_alpine:
+	@echo "INFO: Building container image for litmuschaos/infra-alpine:latest"
+	cd custom/hardened-alpine/infra/ && docker build -t litmuschaos/infra-alpine:latest .
+
+_push_litmus_infra_hardened_alpine:
+	@echo "INFO: Publish container litmuschaos/infra-alpine"
+	cd custom/hardened-alpine/infra/ && ./buildscripts/push
+
+litmus-infra-hardened-alpine: deps _build_litmus_infra_hardened_alpine _push_litmus_infra_hardened_alpine
+
+_build_litmus_mongo_utils:
+	@echo "INFO: Building container image for litmuschaos/mongo-utils"
+	cd custom/mongo-utils && docker build -t litmuschaos/mongo-utils .
+
+_push_litmus_mongo_utils:
+	@echo "INFO: Publish container litmuschaos/mongo-utils"
+	cd custom/mongo-utils && ./buildscripts/push
+
+litmus-mongo-utils: deps _build_litmus_mongo_utils _push_litmus_mongo_utils
 
 PHONY: go-build
 go-build: experiment-go-binary

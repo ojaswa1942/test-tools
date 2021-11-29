@@ -58,6 +58,11 @@ jobs:
       workflow-controller: ${{ steps.filter.outputs.workflow-controller }}
       argoexec: ${{ steps.filter.outputs.argoexec }}
       mongo: ${{ steps.filter.outputs.mongo }}
+      litmus-pg-load: ${{ steps.filter.outputs.litmus-pg-load }} 
+      litmus-pg-jmeter: ${{ steps.filter.outputs.litmus-pg-jmeter }}
+      litmus-experiment-hardened-alpine: ${{ steps.filter.outputs.litmus-experiment-hardened-alpine }}
+      litmus-infra-hardened-alpine: ${{ steps.filter.outputs.litmus-infra-hardened-alpine }}
+      mongo-utils: ${{ steps.filter.outputs.mongo-utils }}
 
     steps:
       - uses: actions/checkout@v2
@@ -85,6 +90,10 @@ jobs:
               - 'custom/custom-client/**'
             litmus-checker:
               - 'custom/litmus-checker/**'
+            litmus-experiment-hardened-alpine:
+              - 'custom/hardened-alpine/experiment/**'
+            litmus-infra-hardened-alpine:
+              - 'custom/hardened-alpine/infra/**'              
             logger:
               - 'log_utils/logger/**'
             dd-client:
@@ -127,6 +136,12 @@ jobs:
               - 'custom/mongo/**'
             kafka-deployer:
               - 'custom/app-setup/kafka/**'
+            litmus-pg-load:
+              - 'custom/workflow-helper/postgres-helper/load-test/**'
+            litmus-pg-jmeter:
+              - 'custom/workflow-helper/postgres-helper/jmeter/**'
+            mongo-utils:
+              - 'custom/mongo-utils/**'
 
   litmus-app-deployer:
     runs-on: ubuntu-latest
@@ -181,6 +196,42 @@ jobs:
         run: |
           make docker.buildx
           make _push_litmus_checker
+
+  litmus-infra-hardened-alpine:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.litmus-infra-hardened-alpine == 'true'
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          version: latest
+
+      - name: Building litmus-infra-hardened-alpine image
+        run: |
+          make docker.buildx
+          make _push_litmus_infra_hardened_alpine
+
+  litmus-experiment-hardened-alpine:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.litmus-experiment-hardened-alpine == 'true'
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          version: latest
+
+      - name: Building litmus-experiment-hardened-alpine image
+        run: |
+          make docker.buildx
+          make _push_litmus_experiment_hardened_alpine
 
   litmus-git-app-checker:
     runs-on: ubuntu-latest
@@ -501,3 +552,40 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build and Push fio image
         run: make fio
+
+  litmus-pg-load:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.litmus-pg-load == 'true'
+    steps:
+      - uses: actions/checkout@v2
+      - name: Building litmus-pg-load image
+        run: |
+          make docker.buildx
+          make _push_litmus_pg_load
+  
+  litmus-pg-jmeter:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.litmus-pg-jmeter == 'true'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Building litmus-pg-jmeter image
+        run: |
+          make docker.buildx
+          make _push_litmus_pg_jmeter
+    
+  mongo-utils:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.mongo-utils == 'true'
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Building mongo-utils image
+        run: |
+          make docker.buildx
+          make _push_litmus_mongo_utils 
