@@ -405,6 +405,36 @@ _push_litmus_mongo_utils:
 
 litmus-mongo-utils: deps _build_litmus_mongo_utils _push_litmus_mongo_utils
 
+_build_litmusctl:
+	@echo "INFO: Building container image for litmuschaos/litmusctl"
+	cd custom/litmusctl && docker build -t litmuschaos/litmusctl . --build-arg TARGETARCH=amd64 
+
+_push_litmusctl:
+	@echo "INFO: Publish container litmuschaos/litmusctl"
+	cd custom/litmusctl && ./buildscripts/push
+
+litmusctl: deps _build_litmusctl _push_litmusctl
+
+_build_litmus_redis_load:
+	@echo "INFO: Building container image for litmuschaos/litmus-redis-load"
+	cd custom/workflow-helper/redis-helper/load-gen && docker build -t litmuschaos/litmus-redis-load:latest .
+
+_push_litmus_redis_load:
+	@echo "INFO: Publish container litmuschaos/litmus-kgh-loadGen"
+	cd custom/workflow-helper/redis-helper/load-gen && ./buildscripts/push
+
+litmus-redis-load: deps _build_litmus_redis_load _push_litmus_redis_load
+
+_build_litmus_snyk:
+	@echo "INFO: Building container image for litmuschaos/snyk"
+	cd custom/security/snyk/ && docker build -t litmuschaos/snyk:1.0 . --build-arg SNYK_TOKEN=${SNYK_TOKEN}
+
+_push_litmus_snyk:
+	@echo "INFO: Publish container litmuschaos/litmuschaos/snyk"
+	cd custom/security/snyk/ && ./buildscripts/push
+
+litmus-snyk-image: deps _build_litmus_snyk _push_litmus_snyk
+
 PHONY: go-build
 go-build: experiment-go-binary
 

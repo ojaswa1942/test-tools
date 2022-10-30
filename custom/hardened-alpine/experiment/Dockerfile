@@ -1,7 +1,7 @@
 # This Dockerfile contains the hardened alpine image with all the
 # litmus experiment dependencies installed.
 # It is also made non-root, sudo-enabled with default litmus directory.
-FROM alpine:3.14.2
+FROM alpine:3.16.2
 
 LABEL maintainer="LitmusChaos"
 
@@ -31,7 +31,8 @@ RUN apk --update add \
         stress-ng\
         openssh-client\
 #        libc6-compat \
-        sshpass
+        sshpass \
+        expat-doc
 
 RUN set -ex && \
      apk --update add libstdc++ curl ca-certificates && \
@@ -58,7 +59,7 @@ ENV PUMBA_VERSION="0.8.0"
 RUN curl -L https://github.com/alexei-led/pumba/releases/download/${PUMBA_VERSION}/pumba_linux_${TARGETARCH} --output /usr/local/bin/pumba && chmod +x /usr/local/bin/pumba
 
 #Installing promql cli binaries
-RUN curl -L https://github.com/litmuschaos/test-tools/releases/download/${LITMUS_VERSION}/promql-linux-${TARGETARCH} --output /usr/local/bin/promql && chmod +x /usr/local/bin/promql
+RUN curl -L https://github.com/chaosnative/promql-cli/releases/download/2.6.0/promql_linux_${TARGETARCH} --output /usr/local/bin/promql && chmod +x /usr/local/bin/promql
 
 #Installing nsutil cli binaries
 RUN curl -L https://github.com/litmuschaos/test-tools/releases/download/${LITMUS_VERSION}/nsutil-linux-${TARGETARCH} --output /usr/local/bin/nsutil && chmod +x /usr/local/bin/nsutil
@@ -70,6 +71,14 @@ RUN curl -L https://github.com/litmuschaos/test-tools/releases/download/${LITMUS
 RUN curl -L https://github.com/litmuschaos/test-tools/releases/download/${LITMUS_VERSION}/dns_interceptor --output /usr/local/bin/dns_interceptor && chmod +x /usr/local/bin/dns_interceptor
 
 COPY --from=docker:19.03 /usr/local/bin/docker /usr/local/bin/
+
+# Installing toxiproxy binaries
+RUN curl -L https://litmus-http-proxy.s3.amazonaws.com/cli/toxiproxy-cli-linux-${TARGETARCH}.tar.gz --output toxiproxy-cli-linux-${TARGETARCH}.tar.gz && \
+    tar zxvf toxiproxy-cli-linux-${TARGETARCH}.tar.gz -C /usr/local/bin/ && \
+    chmod +x /usr/local/bin/toxiproxy-cli
+RUN curl -L https://litmus-http-proxy.s3.amazonaws.com/server/toxiproxy-server-linux-${TARGETARCH}.tar.gz --output toxiproxy-server-linux-${TARGETARCH}.tar.gz && \
+    tar zxvf toxiproxy-server-linux-${TARGETARCH}.tar.gz -C /usr/local/bin/ && \
+    chmod +x /usr/local/bin/toxiproxy-server
 
 # The user the app should run as
 ENV APP_USER=litmus
@@ -89,6 +98,9 @@ RUN adduser -s /bin/true -u 1000 -D -h $APP_DIR $APP_USER \
   && mkdir "$DATA_DIR" "$CONF_DIR" \
   && chown -R "$APP_USER" "$APP_DIR" "$CONF_DIR" \
   && chmod 700 "$APP_DIR" "$DATA_DIR" "$CONF_DIR" \
+# change to 0(root) group because openshift will run container with arbitrary uid as a member of root group
+  && chgrp -R 0 "$APP_DIR" "$DATA_DIR" "$CONF_DIR" \
+  && chmod -R g=u "$APP_DIR" "$DATA_DIR" "$CONF_DIR" \
   && echo "$APP_USER ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/litmus \
   && chmod 0440 /etc/sudoers.d/litmus
 
